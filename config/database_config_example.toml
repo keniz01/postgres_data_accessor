@@ -1,3 +1,0 @@
-[database]
-schema_name = "my_schema_name"
-connection_string = "postgresql+asyncpg://user_name:password@host_name:port_number/database_name"

@@ -2,3 +2,5 @@
 __pycache__/
 dist/
 database_config.toml
+.pytest_cache/
+.vscode/
