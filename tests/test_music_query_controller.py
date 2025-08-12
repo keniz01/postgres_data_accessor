@@ -1,34 +1,37 @@
-import unittest
+import pytest
+from unittest.mock import AsyncMock, create_autospec
 
+from src.data_accessor.domain.abstract_music_query_service import AbstractMusicQueryService
 from src.data_accessor.application.music_query_controller import MusicQueryController
-from src.data_accessor.domain.music_query_service import MusicQueryService
-from src.data_accessor.infrastructure.music_query_repository import MusicQueryRepository
 
-class TestMusicQueryController(unittest.TestCase):
+@pytest.fixture
+def mock_music_query_service():
+    mock_service = create_autospec(AbstractMusicQueryService, instance=True)
+    mock_service.fetch_database_schema = AsyncMock()
+    mock_service.execute_sql = AsyncMock()
+    return mock_service
 
-    async def setUp(self):
-        self.connection_string = "postgresql+asyncpg://postgres:postgres@localhost:5432/analysis"
-        self.schema_name = "music"
-        self.controller = MusicQueryController(
-            music_query_service=MusicQueryService(MusicQueryRepository(self.schema_name, self.connection_string))
-        )
+@pytest.fixture
+def controller(mock_music_query_service):
+    return MusicQueryController(mock_music_query_service)
 
-    async def test_music_query_database_schema(self):
+@pytest.mark.asyncio
+async def test_fetch_database_schema(controller, mock_music_query_service):
+    mock_response = [{"table": "songs"}, {"table": "artists"}]
+    mock_music_query_service.fetch_database_schema.return_value = mock_response
 
-        # When
-        schema_response = await self.controller.fetch_database_schema(self.schema_name)
+    result = await controller.fetch_database_schema(params={"include_views": True})
 
-        # Then
-        self.assertIsNotNone(schema_response, "Schema response should not be None")
-        self.assertIn('tables', schema_response, "Schema response should contain 'tables' key")
-        self.assertGreater(len(schema_response['tables']), 0, "Schema should contain at least one table")
+    mock_music_query_service.fetch_database_schema.assert_awaited_once_with({"include_views": True})
+    assert result == mock_response
 
-    async def test_music_query_can_execute_sql(self):
+@pytest.mark.asyncio
+async def test_execute_sql(controller, mock_music_query_service):
+    sql = "SELECT * FROM songs"
+    mock_response = [{"id": 1, "title": "Imagine"}]
+    mock_music_query_service.execute_sql.return_value = mock_response
 
-        # When
-        sql_response = await self.controller.execute_sql("SELECT * FROM track LIMIT 10")
+    result = await controller.execute_sql(sql, params=None)
 
-        # Then
-        self.assertIsNotNone(sql_response, "SQL response should not be None")
-        self.assertIn('rows', sql_response, "SQL response should contain 'rows' key")
-        self.assertGreater(len(sql_response['rows']), 0, "SQL response should contain at least one row.")
+    mock_music_query_service.execute_sql.assert_awaited_once_with(sql, None)
+    assert result == mock_response

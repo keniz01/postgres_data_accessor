@@ -44,12 +44,12 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
             async with self.get_conn() as conn:
                 cursor_result = await conn.execute(text(sql))
                 if cursor_result.returns_rows:
-                    sql_response_context = cursor_result.fetchall() 
+                    sql_response_context = await cursor_result.fetchall() 
                     return sql_response_context
         except Exception as e:
             return f"Error: {type(e).__name__}: {e}"
 
-    async def fetch_database_schema(self, schema_name: str, params: dict = None) -> list:
+    async def fetch_database_schema(self, params: dict = None) -> list:
         """
         Fetch the database schema for a given schema name.
 
@@ -64,8 +64,8 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
             ORDER BY table_name, ordinal_position
         """)
         async with self.get_conn() as conn:
-            result = await conn.execute(query, {"schema_name": schema_name})
-            rows = result.fetchall()
+            result = await conn.execute(query, {"schema_name": self.schema_name})
+            rows = await result.fetchall()
 
         grouped = defaultdict(list)
         for table, column, dtype in rows:

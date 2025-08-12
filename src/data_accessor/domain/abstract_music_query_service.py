@@ -17,11 +17,10 @@ class AbstractMusicQueryService(ABC):
         raise NotImplementedError("This method should be overridden by subclasses.")
     
     @abstractmethod
-    def fetch_db_schema(self, schema_name: str, params: dict = None) -> list:
+    def fetch_database_schema(self, params: dict = None) -> list:
         """
         Fetch the database schema for a given schema name.
 
-        :param schema_name: The name of the schema to fetch.
         :param params: Optional parameters for the query.
         :return: A list of tables and their columns in the schema.
         """

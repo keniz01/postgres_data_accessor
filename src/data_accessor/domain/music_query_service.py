@@ -22,12 +22,11 @@ class MusicQueryService(AbstractMusicQueryService):
         """
         return await self.repository.execute_sql(sql, params)
 
-    async def fetch_db_schema(self, schema_name: str, params: dict = None) -> list:
+    async def fetch_database_schema(self, params: dict = None) -> list:
         """
         Fetch the database schema for a given schema name.
 
-        :param schema_name: The name of the schema to fetch.
         :param params: Optional parameters for the query.
         :return: A list of tables and their columns in the schema.
         """
-        return await self.repository.fetch_database_schema(schema_name, params)
+        return await self.repository.fetch_database_schema(params)
