@@ -1,8 +1,8 @@
 import pytest
 from unittest.mock import AsyncMock, create_autospec
 
-from src.data_accessor.domain.abstract_music_query_service import AbstractMusicQueryService
-from src.data_accessor.application.music_query_controller import MusicQueryController
+from data_accessor.domain.abstract_music_query_service import AbstractMusicQueryService
+from data_accessor.application.music_query_controller import MusicQueryController
 
 @pytest.fixture
 def mock_music_query_service():

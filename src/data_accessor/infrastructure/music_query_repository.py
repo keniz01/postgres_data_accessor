@@ -1,27 +1,30 @@
+import sqlparse
 from collections import defaultdict
 from contextlib import asynccontextmanager
-from pydantic import Field
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection
+from typing import Any, AsyncGenerator, List, Optional, Tuple, Union
+from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection, AsyncEngine
+from sqlalchemy.engine import CursorResult
+from sqlalchemy.ext.asyncio.result import AsyncResult
 from sqlalchemy import text
-from typing import Annotated, AsyncGenerator
-from src.data_accessor.domain.abstract_music_query_repository import AbstractMusicQueryRepository
-        
+from pydantic import Field
+from typing_extensions import Annotated
+from data_accessor.domain.abstract_music_query_repository import AbstractMusicQueryRepository
+from data_accessor.domain.exceptions.forbidden_sql_statement_exception import ForbiddenSqlStatementException
+from data_accessor.domain.exceptions.sql_statement_execution_exception import SqlStatementExecutionException
+
+
 class MusicQueryRepository(AbstractMusicQueryRepository):
     """
-	Repository class for music queries.
-	This class implements the methods to interact with the music query repository.
-	"""
+    Repository class for music queries.
+    """
+
     def __init__(
-            self, 
-            schema_name: Annotated[ str, Field( description="The database schema name to connect to." )], 
-            connection_string: Annotated[ str, Field( description="The database connection string" )]) -> None:
-        """
-        Initialize the MusicQueryRepository with a schema name.
-        :param schema_name: The name of the schema to connect to.
-        """
-        self.schema_name = schema_name
-        self.engine = create_async_engine(connection_string, echo=True, future=True)
-        self.schema_name = schema_name
+        self,
+        schema_name: Annotated[str, Field(description="The database schema name to connect to.")],
+        connection_string: Annotated[str, Field(description="The database connection string")]
+    ) -> None:
+        self.schema_name: str = schema_name
+        self.engine: AsyncEngine = create_async_engine(connection_string, echo=True)
 
     @asynccontextmanager
     async def get_conn(self) -> AsyncGenerator[AsyncConnection, None]:
@@ -29,33 +32,30 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
             await conn.execute(text(f"SET search_path TO {self.schema_name}"))
             yield conn
 
-    async def execute_sql(self, sql: str, params: dict = None) -> list:
+    async def execute_sql(self, sql: str, params: Optional[dict] = None) -> Union[List[Tuple[Any, ...]], str]:
         """
-        Execute a SQL query and return the results.
-
-        :param sql: The SQL query to execute.
-        :param params: Optional parameters for the query.
-        :return: A list of results from the query.
+        Execute a SQL query and return the results or a success message.
+        Only SELECT statements are allowed.
         """
         try:
-            if not sql.lower().startswith(("select", "insert", "update", "delete")):
-                return "Only SELECT, INSERT, UPDATE, DELETE statements are allowed."
+            if not self.is_safe_select_query(sql):                
+                raise ForbiddenSqlStatementException("Only SELECT statements are allowed.")
 
             async with self.get_conn() as conn:
-                cursor_result = await conn.execute(text(sql))
-                if cursor_result.returns_rows:
-                    sql_response_context = await cursor_result.fetchall() 
-                    return sql_response_context
+                result: Union[AsyncResult, CursorResult] = await conn.execute(text(sql), params or {})
+                if result.returns_rows:
+                    return result.fetchall()
+                return f"Query executed successfully, {result.rowcount} row(s) affected."
+        except ForbiddenSqlStatementException as e:
+            print(f"Forbidden SQL statement: {e.message}")
+            raise e
         except Exception as e:
-            return f"Error: {type(e).__name__}: {e}"
+            print(f"Error executing SQL statement: {e}")
+            raise SqlStatementExecutionException(f"Error: {type(e).__name__}: {e}")        
 
-    async def fetch_database_schema(self, params: dict = None) -> list:
+    async def fetch_database_schema(self, params: Optional[dict] = None) -> str:
         """
-        Fetch the database schema for a given schema name.
-
-        :param schema_name: The name of the schema to fetch.
-        :param params: Optional parameters for the query.
-        :return: A list of tables and their columns in the schema.
+        Fetch the database schema: tables, columns, and data types.
         """
         query = text("""
             SELECT table_name, column_name, data_type
@@ -63,11 +63,34 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
             WHERE table_schema = :schema_name
             ORDER BY table_name, ordinal_position
         """)
+
         async with self.get_conn() as conn:
-            result = await conn.execute(query, {"schema_name": self.schema_name})
-            rows = await result.fetchall()
+            result: AsyncResult = await conn.execute(query, {"schema_name": self.schema_name})
+            rows = result.fetchall()
 
         grouped = defaultdict(list)
         for table, column, dtype in rows:
             grouped[table].append(f"  {column}: {dtype}")
+
         return "\n".join(f"{table}:\n" + "\n".join(cols) for table, cols in grouped.items())
+        
+    def is_safe_select_query(self, query: str) -> bool:
+        parsed = sqlparse.parse(query)
+        if not parsed or len(parsed) != 1:
+            return False
+
+        stmt = parsed[0]
+        stmt_type = stmt.get_type()
+        if stmt_type != 'SELECT':
+            return False
+
+        # Additional: check for dangerous patterns
+        tokens = [token for token in stmt.tokens if not token.is_whitespace]
+        for token in tokens:
+            # Disallow statements with semicolons or BEGIN/COMMIT etc.
+            if str(token).strip().lower() in {"delete", "insert", "update", "drop", "create", "alter", "commit", "rollback"}:
+                return False
+
+        return True
+
+        
