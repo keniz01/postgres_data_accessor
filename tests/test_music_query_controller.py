@@ -1,6 +1,11 @@
 import pytest
+import sys
 from unittest.mock import AsyncMock, create_autospec
 
+print(">> sys.path:")
+for p in sys.path:
+    print("  ", p)
+    
 from data_accessor.domain.abstract_music_query_service import AbstractMusicQueryService
 from data_accessor.application.music_query_controller import MusicQueryController
 
@@ -15,7 +20,6 @@ def mock_music_query_service():
 def controller(mock_music_query_service):
     return MusicQueryController(mock_music_query_service)
 
-@pytest.mark.asyncio
 async def test_fetch_database_schema(controller, mock_music_query_service):
     mock_response = [{"table": "songs"}, {"table": "artists"}]
     mock_music_query_service.fetch_database_schema.return_value = mock_response
@@ -25,7 +29,6 @@ async def test_fetch_database_schema(controller, mock_music_query_service):
     mock_music_query_service.fetch_database_schema.assert_awaited_once_with({"include_views": True})
     assert result == mock_response
 
-@pytest.mark.asyncio
 async def test_execute_sql(controller, mock_music_query_service):
     sql = "SELECT * FROM songs"
     mock_response = [{"id": 1, "title": "Imagine"}]
