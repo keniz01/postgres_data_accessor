@@ -12,13 +12,10 @@ def mock_repository():
     repo.fetch_database_schema = AsyncMock()
     return repo
 
-
 @pytest.fixture
 def music_query_service(mock_repository):
     return MusicQueryService(repository=mock_repository)
 
-
-@pytest.mark.asyncio
 async def test_execute_sql_calls_repository(music_query_service, mock_repository):
     # Arrange
     sql_query = "SELECT * FROM songs WHERE artist = :artist"
@@ -33,8 +30,6 @@ async def test_execute_sql_calls_repository(music_query_service, mock_repository
     mock_repository.execute_sql.assert_awaited_once_with(sql_query, params)
     assert result == expected_result
 
-
-@pytest.mark.asyncio
 async def test_fetch_database_schema_calls_repository(music_query_service, mock_repository):
     # Arrange
     params = {"schema": "public"}
@@ -51,8 +46,6 @@ async def test_fetch_database_schema_calls_repository(music_query_service, mock_
     mock_repository.fetch_database_schema.assert_awaited_once_with(params)
     assert result == expected_schema
 
-
-@pytest.mark.asyncio
 async def test_execute_sql_with_no_params(music_query_service, mock_repository):
     # Arrange
     sql_query = "SELECT * FROM songs"
@@ -66,8 +59,6 @@ async def test_execute_sql_with_no_params(music_query_service, mock_repository):
     mock_repository.execute_sql.assert_awaited_once_with(sql_query, None)
     assert result == expected_result
 
-
-@pytest.mark.asyncio
 async def test_fetch_database_schema_with_no_params(music_query_service, mock_repository):
     # Arrange
     expected_schema = [{"table": "artists", "columns": ["id", "name"]}]

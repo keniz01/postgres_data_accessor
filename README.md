@@ -8,5 +8,6 @@ Use pypi-server to distribute data_accessor by following the steps here:
 3) uv pip install --index-url http://localhost:8000 --trusted-host localhost hello-package
 
 pytests
+-------
 uv run hatch run dev:pytest tests/test_music_query_controller.py
-uv run pytest tests/test_music_query_controller.py
+uv run hatch run dev:test

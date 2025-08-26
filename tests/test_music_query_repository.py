@@ -23,18 +23,15 @@ def mock_engine():
 def repo(mock_engine):
     return MusicQueryRepository(schema_name="public", connection_string="postgresql+asyncpg://user:pass@localhost/db")
 
-@pytest.mark.asyncio
 async def test_execute_sql_select(repo):
     print("[TEST] Starting invalid statement test")
     result = await repo.execute_sql("SELECT * FROM test_table")
     assert result == [("table1", "col1", "text")]
 
-@pytest.mark.asyncio
 async def test_execute_sql_invalid_statement(repo):
     with pytest.raises(ForbiddenSqlStatementException):
         await repo.execute_sql("DROP TABLE users")
 
-@pytest.mark.asyncio
 async def test_fetch_database_schema(repo):
     expected = "table1:\n  col1: text"
     result = await repo.fetch_database_schema()
