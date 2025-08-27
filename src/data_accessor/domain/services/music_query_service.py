@@ -1,5 +1,5 @@
-from data_accessor.domain.abstract_music_query_repository import AbstractMusicQueryRepository
-from data_accessor.domain.abstract_music_query_service import AbstractMusicQueryService
+from data_accessor.domain.interfaces.abstract_music_query_repository import AbstractMusicQueryRepository
+from data_accessor.domain.interfaces.abstract_music_query_service import AbstractMusicQueryService
 
 class MusicQueryService(AbstractMusicQueryService):
     """

@@ -8,7 +8,7 @@ from sqlalchemy.ext.asyncio.result import AsyncResult
 from sqlalchemy import text
 from pydantic import Field
 from typing_extensions import Annotated
-from data_accessor.domain.abstract_music_query_repository import AbstractMusicQueryRepository
+from data_accessor.domain.interfaces.abstract_music_query_repository import AbstractMusicQueryRepository
 from data_accessor.domain.exceptions.forbidden_sql_statement_exception import ForbiddenSqlStatementException
 from data_accessor.domain.exceptions.sql_statement_execution_exception import SqlStatementExecutionException
 

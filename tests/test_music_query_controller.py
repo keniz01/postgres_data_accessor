@@ -1,12 +1,6 @@
 import pytest
-import sys
-from unittest.mock import AsyncMock, create_autospec
-
-print(">> sys.path:")
-for p in sys.path:
-    print("  ", p)
-    
-from data_accessor.domain.abstract_music_query_service import AbstractMusicQueryService
+from unittest.mock import AsyncMock, create_autospec    
+from data_accessor.domain.interfaces.abstract_music_query_service import AbstractMusicQueryService
 from data_accessor.application.music_query_controller import MusicQueryController
 
 @pytest.fixture

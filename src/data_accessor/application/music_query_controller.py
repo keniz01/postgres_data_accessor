@@ -1,4 +1,4 @@
-from data_accessor.domain.abstract_music_query_service import AbstractMusicQueryService
+from data_accessor.domain.interfaces.abstract_music_query_service import AbstractMusicQueryService
 
 class MusicQueryController:
     def __init__(self, music_query_service: AbstractMusicQueryService):

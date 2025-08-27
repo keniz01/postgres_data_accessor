@@ -2,11 +2,11 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
 from data_accessor.domain.exceptions.forbidden_sql_statement_exception import ForbiddenSqlStatementException
-from data_accessor.infrastructure.music_query_repository import MusicQueryRepository
+from data_accessor.infrastructure.repositories.music_query_repository import MusicQueryRepository
 
 @pytest.fixture
 def mock_engine():
-    with patch("data_accessor.infrastructure.music_query_repository.create_async_engine") as mock_create_engine:
+    with patch("data_accessor.infrastructure.repositories.music_query_repository.create_async_engine") as mock_create_engine:
         mock_engine = MagicMock()
         mock_conn = AsyncMock()
         mock_result = MagicMock()
