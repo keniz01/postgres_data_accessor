@@ -1,5 +1,6 @@
 from data_accessor.domain.interfaces.abstract_music_query_repository import AbstractMusicQueryRepository
 from data_accessor.domain.interfaces.abstract_music_query_service import AbstractMusicQueryService
+import logging
 
 class MusicQueryService(AbstractMusicQueryService):
     """
@@ -8,25 +9,24 @@ class MusicQueryService(AbstractMusicQueryService):
 	"""
     def __init__(self, repository: AbstractMusicQueryRepository):
         """
-        Initialize the MusicQueryService with a repository.
+        Initialize the MusicQueryService with a repository (dependency injection).
         """
         self.repository = repository
 
     async def execute_sql(self, sql: str, params: dict = None) -> list:
-        """
-        Execute a SQL query and return the results.
-
-        :param sql: The SQL query to execute.
-        :param params: Optional parameters for the query.
-        :return: A list of results from the query.
-        """
-        return await self.repository.execute_sql(sql, params)
+        try:
+            result = await self.repository.execute_sql(sql, params)
+            logging.info("Service: SQL executed successfully.")
+            return result
+        except Exception as e:
+            logging.error(f"Service: Error executing SQL: {e}")
+            raise
 
     async def fetch_database_schema(self, params: dict = None) -> list:
-        """
-        Fetch the database schema for a given schema name.
-
-        :param params: Optional parameters for the query.
-        :return: A list of tables and their columns in the schema.
-        """
-        return await self.repository.fetch_database_schema(params)
+        try:
+            schema = await self.repository.fetch_database_schema(params)
+            logging.info("Service: Fetched database schema.")
+            return schema
+        except Exception as e:
+            logging.error(f"Service: Error fetching schema: {e}")
+            raise

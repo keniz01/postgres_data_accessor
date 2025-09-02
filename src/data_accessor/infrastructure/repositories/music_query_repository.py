@@ -11,6 +11,7 @@ from typing_extensions import Annotated
 from data_accessor.domain.interfaces.abstract_music_query_repository import AbstractMusicQueryRepository
 from data_accessor.domain.exceptions.forbidden_sql_statement_exception import ForbiddenSqlStatementException
 from data_accessor.domain.exceptions.sql_statement_execution_exception import SqlStatementExecutionException
+import logging
 
 
 class MusicQueryRepository(AbstractMusicQueryRepository):
@@ -21,32 +22,34 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
     def __init__(
         self,
         schema_name: Annotated[str, Field(description="The database schema name to connect to.")],
-        connection_string: Annotated[str, Field(description="The database connection string")]
+        engine: AsyncEngine
     ) -> None:
         self.schema_name: str = schema_name
-        self.engine: AsyncEngine = create_async_engine(connection_string, echo=True)
+        self.engine: AsyncEngine = engine
 
     @asynccontextmanager
     async def get_conn(self) -> AsyncGenerator[AsyncConnection, None]:
-        async with self.engine.connect() as conn:
+        conn = await self.engine.connect()
+        try:
             await conn.execute(text(f"SET search_path TO {self.schema_name}"))
             yield conn
+        finally:
+            await conn.close()
 
     async def execute_sql(self, sql: str, params: Optional[dict] = None) -> Union[List[Tuple[Any, ...]], str]:
-        """
-        Execute a SQL query and return the results or a success message.
-        Only SELECT statements are allowed.
-        """
-        import logging
         try:
             if not self.is_safe_select_query(sql):
+                logging.warning(f"Forbidden SQL statement attempted: {sql}")
                 raise ForbiddenSqlStatementException("Only SELECT statements are allowed.")
-
             async with self.get_conn() as conn:
                 result: Union[AsyncResult, CursorResult] = await conn.execute(text(sql), params or {})
                 if result.returns_rows:
-                    return result.fetchall()
-                return f"Query executed successfully, {result.rowcount} row(s) affected."
+                    rows = result.fetchall()
+                    logging.info(f"SQL executed successfully, returned {len(rows)} rows.")
+                    return rows
+                msg = f"Query executed successfully, {result.rowcount} row(s) affected."
+                logging.info(msg)
+                return msg
         except ForbiddenSqlStatementException as e:
             logging.warning(f"Forbidden SQL statement: {e.message}")
             raise e
@@ -55,25 +58,25 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
             raise SqlStatementExecutionException(f"Error: {type(e).__name__}: {e}")
 
     async def fetch_database_schema(self, params: Optional[dict] = None) -> str:
-        """
-        Fetch the database schema: tables, columns, and data types.
-        """
         query = text("""
             SELECT table_name, column_name, data_type
             FROM information_schema.columns
             WHERE table_schema = :schema_name
             ORDER BY table_name, ordinal_position
         """)
-
-        async with self.get_conn() as conn:
-            result: AsyncResult = await conn.execute(query, {"schema_name": self.schema_name})
-            rows = result.fetchall()
-
-        grouped = defaultdict(list)
-        for table, column, dtype in rows:
-            grouped[table].append(f"  {column}: {dtype}")
-
-        return "\n".join(f"{table}:\n" + "\n".join(cols) for table, cols in grouped.items())
+        try:
+            async with self.get_conn() as conn:
+                result: AsyncResult = await conn.execute(query, {"schema_name": self.schema_name})
+                rows = result.fetchall()
+            grouped = defaultdict(list)
+            # Functional style grouping (comprehension)
+            [grouped[table].append(f"  {column}: {dtype}") for table, column, dtype in rows]
+            schema_str = "\n".join(f"{table}:\n" + "\n".join(cols) for table, cols in grouped.items())
+            logging.info(f"Fetched database schema for {self.schema_name}")
+            return schema_str
+        except Exception as e:
+            logging.error(f"Error fetching database schema: {e}")
+            raise SqlStatementExecutionException(f"Error: {type(e).__name__}: {e}")
         
     def is_safe_select_query(self, query: str) -> bool:
         """
