@@ -2,6 +2,7 @@
 __pycache__/
 dist/
 database_config.toml
+db_secrets.toml
 .pytest_cache/
 .vscode/
 .testmondata
