@@ -37,8 +37,9 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
         Execute a SQL query and return the results or a success message.
         Only SELECT statements are allowed.
         """
+        import logging
         try:
-            if not self.is_safe_select_query(sql):                
+            if not self.is_safe_select_query(sql):
                 raise ForbiddenSqlStatementException("Only SELECT statements are allowed.")
 
             async with self.get_conn() as conn:
@@ -47,11 +48,11 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
                     return result.fetchall()
                 return f"Query executed successfully, {result.rowcount} row(s) affected."
         except ForbiddenSqlStatementException as e:
-            print(f"Forbidden SQL statement: {e.message}")
+            logging.warning(f"Forbidden SQL statement: {e.message}")
             raise e
         except Exception as e:
-            print(f"Error executing SQL statement: {e}")
-            raise SqlStatementExecutionException(f"Error: {type(e).__name__}: {e}")        
+            logging.error(f"Error executing SQL statement: {e}")
+            raise SqlStatementExecutionException(f"Error: {type(e).__name__}: {e}")
 
     async def fetch_database_schema(self, params: Optional[dict] = None) -> str:
         """
@@ -75,6 +76,12 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
         return "\n".join(f"{table}:\n" + "\n".join(cols) for table, cols in grouped.items())
         
     def is_safe_select_query(self, query: str) -> bool:
+        """
+        Enhanced SQL safety check:
+        - Only single SELECT statements allowed
+        - No semicolons, comments, or transaction control
+        - No CTEs (WITH ...)
+        """
         parsed = sqlparse.parse(query)
         if not parsed or len(parsed) != 1:
             return False
@@ -84,11 +91,23 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
         if stmt_type != 'SELECT':
             return False
 
-        # Additional: check for dangerous patterns
+        # Disallow CTEs (WITH ...)
+        if any(token.ttype is sqlparse.tokens.Keyword and token.value.upper() == "WITH" for token in stmt.tokens):
+            return False
+
+        # Disallow semicolons (multiple statements)
+        if ";" in query:
+            return False
+
+        # Disallow comments
+        if "--" in query or "/*" in query:
+            return False
+
+        # Disallow transaction control and DML/DDL
+        forbidden = {"delete", "insert", "update", "drop", "create", "alter", "commit", "rollback"}
         tokens = [token for token in stmt.tokens if not token.is_whitespace]
         for token in tokens:
-            # Disallow statements with semicolons or BEGIN/COMMIT etc.
-            if str(token).strip().lower() in {"delete", "insert", "update", "drop", "create", "alter", "commit", "rollback"}:
+            if str(token).strip().lower() in forbidden:
                 return False
 
         return True

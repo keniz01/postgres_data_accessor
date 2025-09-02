@@ -6,7 +6,7 @@ class AbstractMusicQueryRepository(ABC):
     This class defines the interface for querying data from a database.
     """
     @abstractmethod
-    def execute_sql(self, sql: str, params: dict = None) -> list:
+    async def execute_sql(self, sql: str, params: dict = None) -> list:
         """
         Execute a query and return the results.
 
@@ -17,7 +17,7 @@ class AbstractMusicQueryRepository(ABC):
         raise NotImplementedError("This method should be overridden by subclasses.")
     
     @abstractmethod
-    def fetch_database_schema(self, params: dict = None) -> list:
+    async def fetch_database_schema(self, params: dict = None) -> list:
         """
         Fetch the database schema for a given schema name.
 
