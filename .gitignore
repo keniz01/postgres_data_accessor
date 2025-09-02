@@ -1,8 +1,7 @@
 .venv
 __pycache__/
 dist/
-database_config.toml
-db_secrets.toml
+secrets.toml
 .pytest_cache/
 .vscode/
 .testmondata
