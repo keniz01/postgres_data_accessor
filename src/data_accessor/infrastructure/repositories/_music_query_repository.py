@@ -13,6 +13,8 @@ from data_accessor.domain.exceptions.forbidden_sql_statement_exception import Fo
 from data_accessor.domain.exceptions.sql_statement_execution_exception import SqlStatementExecutionException
 import logging
 
+# INTERNAL MODULE: Not for direct import outside data_accessor
+if not __name__.startswith("data_accessor"): raise ImportError("_music_query_repository is internal and cannot be imported directly.")
 
 class MusicQueryRepository(AbstractMusicQueryRepository):
     """
@@ -115,4 +117,4 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
 
         return True
 
-        
+

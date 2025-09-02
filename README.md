@@ -53,35 +53,14 @@ uv run hatch run dev:test
 
 ## Example Usage
 
+> **Note:** Only `MusicQueryController` is exposed as the public API. Service and repository layers are internal and not intended for direct use outside the package.
+
 Below is a minimal example of how to use the package in your code:
 
 ```python
-from data_accessor.infrastructure.repositories.music_query_repository import MusicQueryRepository
-from sqlalchemy.ext.asyncio import create_async_engine
-
-engine = create_async_engine("postgresql+asyncpg://user:password@localhost/dbname")
-repo = MusicQueryRepository(schema_name="public", engine=engine)
-
-# Example async usage
-import asyncio
-
-async def main():
-	result = await repo.execute_sql("SELECT * FROM music_table")
-	print(result)
-
-asyncio.run(main())
-```
-
----
-
-## Advanced Usage
-
-### Using the Service and Controller Layers
-
-```python
-from data_accessor.infrastructure.repositories.music_query_repository import MusicQueryRepository
-from data_accessor.domain.services.music_query_service import MusicQueryService
-from data_accessor.application.music_query_controller import MusicQueryController
+from data_accessor import MusicQueryController
+from data_accessor.infrastructure.repositories._music_query_repository import MusicQueryRepository
+from data_accessor.domain.services._music_query_service import MusicQueryService
 from sqlalchemy.ext.asyncio import create_async_engine
 import asyncio
 
@@ -90,26 +69,23 @@ repo = MusicQueryRepository(schema_name="public", engine=engine)
 service = MusicQueryService(repository=repo)
 controller = MusicQueryController(music_query_service=service)
 
-async def run_query():
-	try:
-		# Run a safe SELECT query
-		results = await controller.execute_sql("SELECT * FROM music_table")
-		print("Query Results:", results)
-	except Exception as e:
-		print("Error executing query:", e)
+async def main():
+    result = await controller.execute_sql("SELECT * FROM music_table")
+    print(result)
 
-asyncio.run(run_query())
+asyncio.run(main())
 ```
+
+---
+
+## Advanced Usage
 
 ### Fetching Database Schema
 
 ```python
 async def fetch_schema():
-	try:
-		schema = await controller.fetch_database_schema()
-		print("Database Schema:\n", schema)
-	except Exception as e:
-		print("Error fetching schema:", e)
+    schema = await controller.fetch_database_schema()
+    print("Database Schema:\n", schema)
 
 asyncio.run(fetch_schema())
 ```
@@ -120,26 +96,20 @@ You can inject custom repository or service implementations for testing or exten
 
 ```python
 class CustomRepository(MusicQueryRepository):
-	# Override methods for custom behavior
-	pass
+    # Override methods for custom behavior
+    pass
 
 custom_repo = CustomRepository(schema_name="public", engine=engine)
 custom_service = MusicQueryService(repository=custom_repo)
 custom_controller = MusicQueryController(music_query_service=custom_service)
 ```
 
-### Exception Handling Example
+---
 
-```python
-async def safe_query():
-	try:
-		# This will raise ForbiddenSqlStatementException for non-SELECT
-		await controller.execute_sql("DROP TABLE music_table")
-	except Exception as e:
-		print("Expected error:", e)
+## Internal API Restriction
 
-asyncio.run(safe_query())
-```
+- Only import `MusicQueryController` from the package root: `from data_accessor import MusicQueryController`
+- Internal modules (`_music_query_service.py`, `_music_query_repository.py`) are not intended for direct use and will raise an ImportError if imported outside the package context.
 
 ---
 
@@ -148,3 +118,5 @@ asyncio.run(safe_query())
 - All queries must be safe SELECT statements.
 - Use dependency injection for testing and extension.
 - Logging is built-in for traceability and debugging.
+
+# Note: Only MusicQueryController is public API. Service and repository are internal.

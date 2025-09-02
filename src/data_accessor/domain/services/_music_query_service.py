@@ -1,3 +1,6 @@
+# INTERNAL MODULE: Not for direct import outside data_accessor
+if not __name__.startswith("data_accessor"): raise ImportError("_music_query_service is internal and cannot be imported directly.")
+
 from data_accessor.domain.interfaces.abstract_music_query_repository import AbstractMusicQueryRepository
 from data_accessor.domain.interfaces.abstract_music_query_service import AbstractMusicQueryService
 import logging

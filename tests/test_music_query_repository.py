@@ -2,11 +2,11 @@ import pytest
 from unittest.mock import AsyncMock, patch, MagicMock
 
 from data_accessor.domain.exceptions.forbidden_sql_statement_exception import ForbiddenSqlStatementException
-from data_accessor.infrastructure.repositories.music_query_repository import MusicQueryRepository
+from data_accessor.infrastructure.repositories._music_query_repository import MusicQueryRepository
 
 @pytest.fixture
 def mock_engine():
-    with patch("data_accessor.infrastructure.repositories.music_query_repository.create_async_engine") as mock_create_engine:
+    with patch("data_accessor.infrastructure.repositories._music_query_repository.create_async_engine") as mock_create_engine:
         mock_engine = MagicMock()
         mock_conn = AsyncMock()
         mock_result = MagicMock()
@@ -14,14 +14,14 @@ def mock_engine():
         mock_result.fetchall.return_value = [("table1", "col1", "text")]
 
         mock_conn.execute.return_value = mock_result
-        mock_engine.connect.return_value.__aenter__.return_value = mock_conn
+        mock_engine.connect = AsyncMock(return_value=mock_conn)
 
         mock_create_engine.return_value = mock_engine
         yield mock_engine
 
 @pytest.fixture
 def repo(mock_engine):
-    return MusicQueryRepository(schema_name="public", connection_string="postgresql+asyncpg://user:pass@localhost/db")
+    return MusicQueryRepository(schema_name="public", engine=mock_engine)
 
 async def test_execute_sql_select(repo):
     print("[TEST] Starting invalid statement test")

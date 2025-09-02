@@ -2,7 +2,7 @@ import pytest
 from unittest.mock import AsyncMock, MagicMock
 
 from data_accessor.domain.interfaces.abstract_music_query_repository import AbstractMusicQueryRepository
-from data_accessor.domain.services.music_query_service import MusicQueryService
+from data_accessor.domain.services._music_query_service import MusicQueryService
 
 
 @pytest.fixture
