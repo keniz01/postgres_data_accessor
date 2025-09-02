@@ -10,13 +10,13 @@ class MusicQueryService(AbstractMusicQueryService):
 	Service class for music queries.
 	This class implements the methods to interact with the music query repository.
 	"""
-    def __init__(self, repository: AbstractMusicQueryRepository):
+    def __init__(self, repository: AbstractMusicQueryRepository) -> None:
         """
         Initialize the MusicQueryService with a repository (dependency injection).
         """
         self.repository = repository
 
-    async def execute_sql(self, sql: str, params: dict = None) -> list:
+    async def execute_sql(self, sql: str, params: dict | None = None) -> list:
         try:
             result = await self.repository.execute_sql(sql, params)
             logging.info("Service: SQL executed successfully.")
@@ -25,7 +25,7 @@ class MusicQueryService(AbstractMusicQueryService):
             logging.error(f"Service: Error executing SQL: {e}")
             raise
 
-    async def fetch_database_schema(self, params: dict = None) -> list:
+    async def fetch_database_schema(self, params: dict | None = None) -> list:
         try:
             schema = await self.repository.fetch_database_schema(params)
             logging.info("Service: Fetched database schema.")

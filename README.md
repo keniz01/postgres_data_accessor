@@ -43,7 +43,6 @@ uv remove data_accessor
 
 ```sh
 uv run hatch run dev:test tests/test_music_query_controller.py
-```
 
 
 ```sh
@@ -58,11 +57,7 @@ uv run hatch run dev:test
 Below is a minimal example of how to use the package in your code:
 
 ```python
-from data_accessor import MusicQueryController
-from data_accessor.infrastructure.repositories._music_query_repository import MusicQueryRepository
-from data_accessor.domain.services._music_query_service import MusicQueryService
 from sqlalchemy.ext.asyncio import create_async_engine
-import asyncio
 
 engine = create_async_engine("postgresql+asyncpg://user:password@localhost/dbname")
 repo = MusicQueryRepository(schema_name="public", engine=engine)
@@ -75,7 +70,6 @@ async def main():
 
 asyncio.run(main())
 ```
-
 ---
 
 ## Advanced Usage
@@ -86,7 +80,6 @@ asyncio.run(main())
 async def fetch_schema():
     schema = await controller.fetch_database_schema()
     print("Database Schema:\n", schema)
-
 asyncio.run(fetch_schema())
 ```
 
@@ -107,7 +100,6 @@ custom_controller = MusicQueryController(music_query_service=custom_service)
 ---
 
 ## Internal API Restriction
-
 - Only import `MusicQueryController` from the package root: `from data_accessor import MusicQueryController`
 - Internal modules (`_music_query_service.py`, `_music_query_repository.py`) are not intended for direct use and will raise an ImportError if imported outside the package context.
 
