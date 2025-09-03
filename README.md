@@ -111,7 +111,12 @@ uv run hatch run dev:test tests/test_music_query_controller.py
 ### Run Tests in all files
 
 ```sh
+# On Windows:
 uv run hatch run dev:test
+
+# On macOS/Linux:
+source .venv/bin/activate  # Activate virtual environment first
+PYTHONPATH=src pytest tests/
 ```
 
 
