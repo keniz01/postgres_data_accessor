@@ -70,7 +70,7 @@ cd dist && python -m http.server 8080
 ```
 
 ### Install the Package on a Client
-Install from your local server (or PyPI):
+Install from your local server:
 
 ```sh
 uv add --find-links http://localhost:8080 --index https://pypi.org/simple data_accessor
@@ -85,12 +85,30 @@ uv remove data_accessor
 
 
 ## Running Unit Tests (pytest)
+You will need to create a virtual enviornment first.
+uv automatically create a .venv folder after running uv sync
+Activate virtual environment Windows 
+```sh
+.venv/Scripts/activate 
+```
+and on macos
+```sh
+source .venv/bin/activate on macos
+```
+
+You can also create a virtual environment specific to hatch
+
+```sh
+uv run hatch env create dev
+```
 
 ### Run Tests in a Single File
 
 ```sh
 uv run hatch run dev:test tests/test_music_query_controller.py
+```
 
+### Run Tests in all files
 
 ```sh
 uv run hatch run dev:test
