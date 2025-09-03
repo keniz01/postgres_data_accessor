@@ -25,19 +25,8 @@ packages = ["data_accessor"]
 
 [project.optional-dependencies]
 dev = [
-    "pytest>=8.4.1",
-    "pytest-asyncio>=1.1.0",
-    "pytest-pythonpath>=0.7.3"
+    "coverage>=7.10.0"
 ]
-
-[tool.pytest.ini_options]
-pythonpath = ["src"]
-asyncio_mode = "auto"
-log_cli = true
-log_level = "DEBUG"
-log_format = "%(asctime)s %(levelname)s %(message)s"
-testpaths = ["tests"]
-python_files = ["test_*.py"]
 
 [tool.hatch.envs.dev]
 dependencies = ["data-accessor[dev]"]
