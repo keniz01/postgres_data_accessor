@@ -15,9 +15,9 @@ class TestMusicQueryController(unittest.IsolatedAsyncioTestCase):
         mock_response = [{"table": "songs"}, {"table": "artists"}]
         self.mock_service.fetch_database_schema.return_value = mock_response
 
-        result = await self.controller.fetch_database_schema(params={"include_views": True})
+        result = await self.controller.fetch_database_schema('[2132131]')
 
-        self.mock_service.fetch_database_schema.assert_awaited_once_with({"include_views": True})
+        self.mock_service.fetch_database_schema.assert_awaited_once_with('[2132131]')
         self.assertEqual(result, mock_response)
 
     async def test_execute_sql(self):
@@ -25,9 +25,9 @@ class TestMusicQueryController(unittest.IsolatedAsyncioTestCase):
         mock_response = [{"id": 1, "title": "Imagine"}]
         self.mock_service.execute_sql.return_value = mock_response
 
-        result = await self.controller.execute_sql(sql, params=None)
+        result = await self.controller.execute_sql(sql)
 
-        self.mock_service.execute_sql.assert_awaited_once_with(sql, None)
+        self.mock_service.execute_sql.assert_awaited_once_with(sql)
         self.assertEqual(result, mock_response)
 
 if __name__ == '__main__':

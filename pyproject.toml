@@ -37,4 +37,9 @@ test = "pytest tests"
 test = "pytest tests"
 test-changed = "pytest --testmon"
 
+[dependency-groups]
+dev = [
+    "coverage>=7.10.6",
+]
+
 
