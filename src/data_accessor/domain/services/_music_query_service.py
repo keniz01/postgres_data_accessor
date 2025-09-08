@@ -16,18 +16,18 @@ class MusicQueryService(AbstractMusicQueryService):
         """
         self.repository = repository
 
-    async def execute_sql(self, sql: str, params: dict | None = None) -> list:
+    async def execute_sql(self, sql: str) -> list:
         try:
-            result = await self.repository.execute_sql(sql, params)
+            result = await self.repository.execute_sql(sql)
             logging.info("Service: SQL executed successfully.")
             return result
         except Exception as e:
             logging.error(f"Service: Error executing SQL: {e}")
             raise
 
-    async def fetch_database_schema(self, params: dict | None = None) -> list:
+    async def fetch_database_schema(self, prompt_embeddings) -> list:
         try:
-            schema = await self.repository.fetch_database_schema(params)
+            schema = await self.repository.fetch_database_schema(prompt_embeddings)
             logging.info("Service: Fetched database schema.")
             return schema
         except Exception as e:

@@ -2,12 +2,10 @@ import sqlparse
 from collections import defaultdict
 from contextlib import asynccontextmanager
 from typing import Any, AsyncGenerator, List, Optional, Tuple, Union
-from sqlalchemy.ext.asyncio import create_async_engine, AsyncConnection, AsyncEngine
+from sqlalchemy.ext.asyncio import AsyncConnection, AsyncEngine
 from sqlalchemy.engine import CursorResult
 from sqlalchemy.ext.asyncio.result import AsyncResult
 from sqlalchemy import text
-from pydantic import Field
-from typing_extensions import Annotated
 from data_accessor.domain.interfaces.abstract_music_query_repository import AbstractMusicQueryRepository
 from data_accessor.domain.exceptions.forbidden_sql_statement_exception import ForbiddenSqlStatementException
 from data_accessor.domain.exceptions.sql_statement_execution_exception import SqlStatementExecutionException
@@ -23,28 +21,26 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
 
     def __init__(
         self,
-        schema_name: Annotated[str, Field(description="The database schema name to connect to.")],
         engine: AsyncEngine
     ) -> None:
-        self.schema_name: str = schema_name
         self.engine: AsyncEngine = engine
 
     @asynccontextmanager
-    async def get_conn(self) -> AsyncGenerator[AsyncConnection, None]:
+    async def get_conn(self, schema_name: str) -> AsyncGenerator[AsyncConnection, None]:
         conn = await self.engine.connect()
         try:
-            await conn.execute(text(f"SET search_path TO {self.schema_name}"))
+            await conn.execute(text(f"SET search_path TO {schema_name}"))
             yield conn
         finally:
             await conn.close()
 
-    async def execute_sql(self, sql: str, params: Optional[dict] = None) -> Union[List[Tuple[Any, ...]], str]:
+    async def execute_sql(self, sql: str) -> Union[List[Tuple[Any, ...]], str]:
         try:
             if not self.is_safe_select_query(sql):
                 logging.warning(f"Forbidden SQL statement attempted: {sql}")
                 raise ForbiddenSqlStatementException("Only SELECT statements are allowed.")
-            async with self.get_conn() as conn:
-                result: Union[AsyncResult, CursorResult] = await conn.execute(text(sql), params or {})
+            async with self.get_conn("music") as conn:
+                result: Union[AsyncResult, CursorResult] = await conn.execute(text(sql))
                 if result.returns_rows:
                     rows = result.fetchall()
                     logging.info(f"SQL executed successfully, returned {len(rows)} rows.")
@@ -59,22 +55,30 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
             logging.error(f"Error executing SQL statement: {e}")
             raise SqlStatementExecutionException(f"Error: {type(e).__name__}: {e}")
 
-    async def fetch_database_schema(self, params: Optional[dict] = None) -> str:
+    async def fetch_database_schema(self, prompt_embeddings: str) -> str:
         query = text("""
-            SELECT table_name, column_name, data_type
-            FROM information_schema.columns
-            WHERE table_schema = :schema_name
-            ORDER BY table_name, ordinal_position
+            SELECT raw_json, (embeddings <#> CAST(:prompt_embeddings AS vector)) as cosine_similarity
+            FROM schema_embeddings
+            ORDER BY cosine_similarity DESC
+            LIMIT 4
         """)
         try:
-            async with self.get_conn() as conn:
-                result: AsyncResult = await conn.execute(query, {"schema_name": self.schema_name})
+            async with self.get_conn("meta") as conn:
+                result: AsyncResult = await conn.execute(query, {"prompt_embeddings": prompt_embeddings, "schema_name": "meta"})
                 rows = result.fetchall()
-            grouped = defaultdict(list)
-            # Functional style grouping (comprehension)
-            [grouped[table].append(f"  {column}: {dtype}") for table, column, dtype in rows]
-            schema_str = "\n".join(f"{table}:\n" + "\n".join(cols) for table, cols in grouped.items())
-            logging.info(f"Fetched database schema for {self.schema_name}")
+            
+            schema_str = ""
+            for row in rows:
+                raw_json_data = row[0]  # Get the raw_json column which is already a dictionary in PostgreSQL
+                for table_name, table_info in raw_json_data.items():
+                    schema_str += f"{table_name}:\n"
+                    if isinstance(table_info, dict) and 'columns' in table_info:
+                        for column_name, column_info in table_info['columns'].items():
+                            description = column_info.get('column_description', '') if isinstance(column_info, dict) else str(column_info)
+                            schema_str += f"  {column_name}: {description}\n"
+                    schema_str += "\n"
+            
+            logging.info(f"Fetched database schema for meta")
             return schema_str
         except Exception as e:
             logging.error(f"Error fetching database schema: {e}")

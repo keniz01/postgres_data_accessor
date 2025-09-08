@@ -212,11 +212,32 @@ asyncio.run(main())
 
 ### Fetching Database Schema
 
+The package supports semantic schema retrieval using vector embeddings. When fetching the database schema, you provide an embeddings vector that represents your schema query, and the system returns the most relevant schema information based on vector similarity.
+
 ```python
 async def fetch_schema():
-    schema = await controller.fetch_database_schema()
+    # The embeddings vector represents your schema query
+    embeddings = "[-0.5179322957992554, 0.654964804649353, ...]"  # 384-dimensional vector
+    schema = await controller.fetch_database_schema(embeddings)
     print("Database Schema:\n", schema)
+
 asyncio.run(fetch_schema())
+```
+
+The schema information is returned in a readable format showing tables, columns, and their descriptions. Example output:
+
+```
+album:
+  title: The title column contains the name of the album
+  album_id: The album_id column contains the primary key for the album table
+  duration: The duration column contains the time it takes an album to complete playing
+  genre_id: The genre_id column maintains a reference to the genre.genre_id column
+  ...
+
+track:
+  title: The title column contains the name of the track
+  track_id: The track_id column contains the primary key for the track table
+  ...
 ```
 
 ### Custom Dependency Injection
