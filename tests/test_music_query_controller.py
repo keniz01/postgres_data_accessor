@@ -13,11 +13,12 @@ class TestMusicQueryController(unittest.IsolatedAsyncioTestCase):
 
     async def test_fetch_database_schema(self):
         mock_response = [{"table": "songs"}, {"table": "artists"}]
+        embeddings = [2132131]
         self.mock_service.fetch_database_schema.return_value = mock_response
 
-        result = await self.controller.fetch_database_schema('[2132131]')
+        result = await self.controller.fetch_database_schema(embeddings)
 
-        self.mock_service.fetch_database_schema.assert_awaited_once_with('[2132131]')
+        self.mock_service.fetch_database_schema.assert_awaited_once_with(embeddings)
         self.assertEqual(result, mock_response)
 
     async def test_execute_sql(self):

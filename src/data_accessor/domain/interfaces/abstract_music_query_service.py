@@ -16,7 +16,7 @@ class AbstractMusicQueryService(ABC):
         raise NotImplementedError("This method should be overridden by subclasses.")
     
     @abstractmethod
-    async def fetch_database_schema(self, prompt_embeddings: str) -> list:
+    async def fetch_database_schema(self, prompt_embeddings: list[float]) -> list:
         """
         Fetch the database schema for a given schema name.
 

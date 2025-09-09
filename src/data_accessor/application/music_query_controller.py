@@ -8,7 +8,7 @@ class MusicQueryController:
         """
         self.music_query_service = music_query_service
 
-    async def fetch_database_schema(self, prompt_embeddings: str) -> list:
+    async def fetch_database_schema(self, prompt_embeddings: list[float]) -> list:
         try:
             schema = await self.music_query_service.fetch_database_schema(prompt_embeddings)
             logging.info("Controller: Fetched database schema.")

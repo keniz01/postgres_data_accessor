@@ -27,7 +27,7 @@ class TestMusicQueryService(unittest.IsolatedAsyncioTestCase):
 
     async def test_fetch_database_schema_calls_repository(self):
         # Arrange
-        embeddings = '[1223333]'
+        embeddings = [1223333]
         expected_schema = [
             {"table": "songs", "columns": ["id", "title", "artist"]},
             {"table": "albums", "columns": ["id", "name"]}

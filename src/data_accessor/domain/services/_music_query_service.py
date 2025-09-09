@@ -25,7 +25,7 @@ class MusicQueryService(AbstractMusicQueryService):
             logging.error(f"Service: Error executing SQL: {e}")
             raise
 
-    async def fetch_database_schema(self, prompt_embeddings) -> list:
+    async def fetch_database_schema(self, prompt_embeddings: list[float]) -> list:
         try:
             schema = await self.repository.fetch_database_schema(prompt_embeddings)
             logging.info("Service: Fetched database schema.")

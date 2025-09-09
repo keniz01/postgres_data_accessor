@@ -81,9 +81,52 @@ class TestMusicQueryRepository(unittest.IsolatedAsyncioTestCase):
         with self.assertRaises(SqlStatementExecutionException):
             await self.repo.execute_sql(sql)
 
+        # Reset side effect for other tests
+            self.mock_conn.execute.side_effect = None            
+
     async def test_fetch_database_schema(self):
-        result = await self.repo.fetch_database_schema("embedding")
-        self.assertEqual(result, "schema")
+        mock_schema_json = '''{
+            "album": {
+                "columns": {
+                    "title": {"column_description": "The album title"},
+                    "artist_id": {"column_description": "Artist reference"}
+                },
+                "table_description": "Album table"
+            }
+        }'''
+
+        self.mock_result.fetchall = AsyncMock(return_value=[(mock_schema_json,)])
+        self.mock_conn.execute.return_value = self.mock_result
+
+        result = await self.repo.fetch_database_schema([0.1, 0.2, 0.3])
+
+        expected = (
+            "album:\n"
+            "  title: The album title\n"
+            "  artist_id: Artist reference\n"
+        )
+        self.assertEqual(result, expected)
+
+    def test_format_single_schema(self):
+        repo = MusicQueryRepository(engine=AsyncMock())
+        raw_json = {
+            "songs": {
+                "columns": {
+                    "title": {"column_description": "The title of the song"},
+                    "artist_id": {"column_description": "Reference to artist"}
+                }
+            }
+        }
+
+        result = repo._format_single_schema(raw_json)
+        expected = [
+            "songs:",
+            "  title: The title of the song",
+            "  artist_id: Reference to artist"
+        ]
+
+        self.assertEqual(result, expected)
+
 
 if __name__ == "__main__":
     unittest.main()

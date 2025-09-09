@@ -1,3 +1,4 @@
+import json
 import sqlparse
 import logging
 
@@ -103,7 +104,7 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
             logging.error(f"Error executing SQL statement: {e}")
             raise SqlStatementExecutionException(f"Error: {type(e).__name__}: {e}") from e
 
-    async def fetch_database_schema(self, prompt_embeddings: str) -> str:
+    async def fetch_database_schema(self, prompt_embeddings: list[float]) -> str:
         """
         Fetches the top 4 most similar database schema entries from the 'schema_embeddings' table,
         based on cosine similarity with the given prompt embeddings.
@@ -118,7 +119,8 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
 
         try:
             async with self.get_conn("meta") as conn:
-                result = await conn.execute(query, {"prompt_embeddings": prompt_embeddings})
+                embedding_str = f"[{','.join(map(str, prompt_embeddings))}]"
+                result = await conn.execute(query, {"prompt_embeddings": embedding_str})
                 rows = await result.fetchall()
 
             return self._format_schema_rows(rows)
@@ -134,7 +136,7 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
         return text("""
             SELECT raw_json, (embeddings <#> CAST(:prompt_embeddings AS vector)) as cosine_similarity
             FROM schema_embeddings
-            ORDER BY cosine_similarity DESC
+            ORDER BY cosine_similarity ASC
             LIMIT 4
         """)
 
@@ -150,8 +152,9 @@ class MusicQueryRepository(AbstractMusicQueryRepository):
         """
         schema_lines = []
 
-        for raw_json, _ in rows:
-            schema_lines.extend(self._format_single_schema(raw_json))
+        for raw_json, in rows:
+            data = json.loads(raw_json)
+            schema_lines.extend(self._format_single_schema(data))
             schema_lines.append("")  # Add spacing between tables
 
         logging.info("Fetched database schema for meta")
